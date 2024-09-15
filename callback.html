@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Callback</title>
+</head>
+<body>
+    <h1>Spotify Callback</h1>
+    <p id="status">Processing...</p>
+
+    <script>
+        async function getTokens(code) {
+            const clientId = '428bbcecfbdd4e22a0e1eec5adeed462'; // Replace with your Spotify Client ID
+            const clientSecret = 'afd41f0466b74180a73cdc62d6313d24'; // Replace with your Spotify Client Secret
+            const redirectUri = 'https://shahidkoul.github.io/emotionstream/callback.html'; // Replace with your Redirect URI
+
+            const response = await fetch('https://accounts.spotify.com/api/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Authorization': 'Basic ' + btoa(clientId + ':' + clientSecret)
+                },
+                body: new URLSearchParams({
+                    grant_type: 'authorization_code',
+                    code: code,
+                    redirect_uri: redirectUri
+                })
+            });
+
+            const data = await response.json();
+            if (data.access_token) {
+                sessionStorage.setItem('spotifyAccessToken', data.access_token);
+                sessionStorage.setItem('spotifyRefreshToken', data.refresh_token);
+                document.getElementById('status').textContent = 'Tokens retrieved. Redirecting to playback page...';
+                window.location.href = 'emotion.html'; // Redirect to the playback page
+            } else {
+                document.getElementById('status').textContent = 'Error retrieving tokens.';
+                console.error('Error:', data);
+            }
+        }
+
+        function getQueryParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        const code = getQueryParameter('code');
+        if (code) {
+            getTokens(code);
+        } else {
+            document.getElementById('status').textContent = 'Authorization code not found.';
+        }
+    </script>
+</body>
+</html>
