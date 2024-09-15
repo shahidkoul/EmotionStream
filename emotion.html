@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 50px;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+            background-color: #1db954;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #1ed760;
+        }
+    </style>
+</head>
+<body>
+    <h1>Select Emotion or Trigger Emotion Prediction</h1>
+    <p>Select an emotion to play a song based on your mood. You will be authenticated with Spotify if needed.</p>
+
+    <!-- Example buttons for testing different emotions -->
+    <button onclick="sendEmotion('happy')">Happy</button>
+    <button onclick="sendEmotion('sad')">Sad</button>
+    <button onclick="sendEmotion('angry')">Angry</button>
+    <button onclick="sendEmotion('relaxed')">Relaxed</button>
+    <button onclick="sendEmotion('excited')">Excited</button>
+
+    <script>
+        // Function to check if the user is authenticated
+        function isAuthenticated() {
+            // Check if access token is stored in sessionStorage
+            return !!sessionStorage.getItem('spotifyAccessToken');
+        }
+
+        // Redirect to authentication page if not authenticated
+    
+
+        // Function to handle emotion selection and authentication
+        function sendEmotion(emotion) {
+            if (isAuthenticated()) {
+                // If authenticated, redirect to playback.html with the emotion
+                window.location.href = `playback.html?emotion=${emotion}`;
+            } else {
+                // If not authenticated, store the emotion and authenticate
+                sessionStorage.setItem('selectedEmotion', emotion);
+                authenticate();
+            }
+        }
+
+        // Optional: After returning from authentication, redirect with stored emotion
+        window.onload = function() {
+            const params = new URLSearchParams(window.location.hash.substring(1));
+            const accessToken = params.get('access_token');
+            const storedEmotion = sessionStorage.getItem('selectedEmotion');
+
+            if (accessToken) {
+                // Save the access token in sessionStorage
+                sessionStorage.setItem('spotifyAccessToken', accessToken);
+
+                // If an emotion was selected before authentication, redirect to playback.html
+                if (storedEmotion) {
+                    window.location.href = `playback.html?emotion=${storedEmotion}`;
+                }
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Web Playback - Emotion-Based</title>
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        #player-container {
+            display: inline-block;
+            background: #333;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            margin-top: 50px;
+        }
+        #controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .control-button {
+            background-color: #1db954;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .control-button:hover {
+            background-color: #1ed760;
+        }
+        .control-button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+        .control-button:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div id="player-container">
+        <h1>Spotify Web Playback SDK - Emotion Based</h1>
+        <p id="status">Initializing...</p>
+        <div id="controls">
+            <button class="control-button" id="prev-btn">⏮</button>
+            <button class="control-button" id="play-btn">▶</button>
+            <button class="control-button" id="pause-btn" disabled>⏸</button>
+            <button class="control-button" id="next-btn">⏭</button>
+        </div>
+    </div>
+
+    <script>
+        const accessToken = sessionStorage.getItem('spotifyAccessToken');
+
+        if (!accessToken) {
+            document.getElementById('status').textContent = 'Error: No access token found. Please authorize first.';
+            throw new Error('No access token found');
+        }
+
+        // Function to determine the song URI based on detected emotion
+        function getTrackUriBasedOnEmotion(emotion) {
+            // Define your song URIs mapped to different emotions
+            const emotionSongs = {
+                'happy': 'spotify:track:7n8ORc71tQ8NXkWfhg898Z', // cxe hue kenh
+                'sad': 'spotify:track:2k0D2OXWXwuwBPXLQQYmZx', // dost banke
+                'angry': 'spotify:track:0euDWZG2g1Cw12TDyLQUKu', //Kaun Talha
+                'relaxed': 'spotify:track:2pNdSpsMfrWrvYkqBizYbW', // brothers
+                'excited': 'spotify:album:2f8hk48Uin6SFQyMKw7AIp' // oldmoney
+            };
+
+            // Return the URI for the detected emotion, or a default if not found
+            return emotionSongs[emotion] || emotionSongs['happy']; // Default to 'happy' if emotion not found
+        }
+
+        // Function to get the emotion from the URL query parameters
+        function getEmotionFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('emotion'); // Get the 'emotion' parameter from the URL
+        }
+
+        window.onSpotifyWebPlaybackSDKReady = () => {
+            const player = new Spotify.Player({
+                name: 'Web Playback SDK Player',
+                getOAuthToken: callback => {
+                    callback(accessToken);
+                }
+            });
+
+            // Handle errors
+            player.on('initialization_error', e => console.error('Initialization Error:', e));
+            player.on('authentication_error', e => console.error('Authentication Error:', e));
+            player.on('account_error', e => console.error('Account Error:', e));
+            player.on('playback_error', e => console.error('Playback Error:', e));
+
+            // Player is ready
+            player.on('ready', ({ device_id }) => {
+                console.log('The Web Playback SDK is ready to play music!');
+                document.getElementById('status').textContent = 'Player is ready! Playing the track...';
+
+                // Get the emotion from the URL query parameter
+                const detectedEmotion = getEmotionFromUrl();
+                if (!detectedEmotion) {
+                    document.getElementById('status').textContent = 'Error: No emotion provided in URL.';
+                    return;
+                }
+
+                console.log('Detected emotion:', detectedEmotion);
+
+                const trackUri = getTrackUriBasedOnEmotion(detectedEmotion); // Get the song URI based on detected emotion
+
+                // Start playback
+                fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ uris: [trackUri] }),
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        console.log('Playback started successfully!');
+                        document.getElementById('play-btn').disabled = true;
+                        document.getElementById('pause-btn').disabled = false;
+                    } else {
+                        document.getElementById('status').textContent = 'Error starting playback.';
+                        console.error('Error:', response);
+                    }
+                }).catch(error => {
+                    document.getElementById('status').textContent = 'Error during playback.';
+                    console.error('Error during playback:', error);
+                });
+
+                // Set up control button events
+                document.getElementById('play-btn').addEventListener('click', () => {
+                    player.resume().then(() => {
+                        document.getElementById('play-btn').disabled = true;
+                        document.getElementById('pause-btn').disabled = false;
+                    }).catch(error => console.error('Error playing:', error));
+                });
+
+                document.getElementById('pause-btn').addEventListener('click', () => {
+                    player.pause().then(() => {
+                        document.getElementById('play-btn').disabled = false;
+                        document.getElementById('pause-btn').disabled = true;
+                    }).catch(error => console.error('Error pausing:', error));
+                });
+
+                document.getElementById('prev-btn').addEventListener('click', () => {
+                    player.previousTrack().catch(error => console.error('Error going to previous track:', error));
+                });
+
+                document.getElementById('next-btn').addEventListener('click', () => {
+                    player.nextTrack().catch(error => console.error('Error going to next track:', error));
+                });
+            });
+
+            // Connect the player to the web
+            player.connect();
+        };
+    </script>
+</body>
+</html>
