@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Stream</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/new.css') }}" type="text/css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="{{ url_for('static', filename='https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&display=swap') }}" rel="stylesheet">
+    <style>
+        /* Add CSS to hide the record section and authorization section */
+        .hidden {
+            display: none;
+        }
+        #logout-btn {
+            padding: 10px 20px;
+            background-color: #ff3b30;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #logout-btn:hover {
+            background-color: #ff6347;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="container">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" class="logo-img">
+                <div id="text"> EMOTION STREAM</div>  
+            </div>
+            <ul class="nav-links">
+                <a href="#home"><li>Home</li></a>
+                <a href="#record"><li>Record</li></a>
+                <a href="#aboutus"><li>About Us</li></a>
+            </ul>
+        </nav>
+    </header>
+    
+    <!-- HOME SECTION -->
+    <section id="home" class="home-section">
+        <div class="home-content">
+            <h1>Emotion Stream</h1>
+            <h3>Feel the Beat, Live the Mood.</h3>
+            <p>Emotion Stream is the ultimate way to personalize and enjoy music and podcasts that match your mood.
+                Discover a new level of immersive audio entertainment on any device with Emotion Stream.
+            </p>
+        </div>
+    </section>
+    
+    <!-- AUTHORIZATION SECTION -->
+    <section id="authorization" class="authorization-section">
+        <h2>Authorize with Spotify</h2>
+        <p>Please log in to use Emotion Stream. Click the button below to authorize:</p>
+        <a href="/authorize" class="btn">Authorize with Spotify</a>
+    </section>
+
+    <!-- RECORD SECTION -->
+    <section id="record" class="record-section hidden" data-authorized="{{ session.get('access_token') is not none | tojson }}">
+        <div class="top-content">
+            <h2>Feel the Beat</h2>
+            <p>Capture your mood, let Emotion Stream curate your playlist. Record with emotion, play with passion.
+            Your music, your feelings, perfectly synced. </p>
+        </div>
+        <div class="card-container">
+            <!-- Card 1: Record your voice -->
+            <div class="card">
+                <h3>Record Your Voice</h3>
+                <p>Capture your voice to get personalized music and playlists that match your mood.</p>
+                <button class="btn" id="recordButton">Start Recording</button>
+                <button id="stopButton" disabled>Stop Recording</button>
+                <p class="instruction">Press "Start Recording" to begin.</p>
+                <audio id="audioPlayback" controls></audio>
+                <form id="uploadForm" action="/predict" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="audioBlob" id="audioBlobInput">
+                    <button type="submit" id="submitButton" disabled>Submit</button>
+                </form>
+            </div>
+            <!-- Card 2: Upload file -->
+            <div class="card">
+                <h3>Upload a File</h3>
+                <p>Upload an audio file to let Emotion Stream analyze your mood and create a playlist for you.</p>
+                <form method="POST" action="/predict" enctype="multipart/form-data">
+                    <input type="file" class="upload-btn" id="upload-file" name="file" accept="audio/*" required>
+                    <input type="submit" value="Upload and Predict">
+                </form>
+                <p class="instruction">Press "Choose File" to upload.</p>
+            </div>
+            <div class="ipad-iphone-img">
+                <img src="{{ url_for('static', filename='images/ipad-iphone.png') }}" alt="ipad iphone">
+            </div>
+            <!--LOGOUT BUTTON-->
+            <button onclick="logoutFromSpotify()">Logout</button>
+
+        </div>
+    </section>
+
+    <!-- ABOUT SECTION -->
+    <div class="about-section" id="aboutus">
+        <section class="team-section">
+            <h2>MEET OUR MEMBERS</h2>
+            <div class="team-cards">
+                <div class="team-card">
+                    <img src="{{ url_for('static', filename='images/Kamran.jpeg') }}" alt="Kamran Ajaz Shah" id="Kamran">
+                    <h3>Kamran Ajaz Shah</h3>
+                    <p>8th Semester, SSM College</p>
+                </div>
+                <div class="team-card">
+                    <img src="path_to_image_zarnain.jpg" alt="Zarnain">
+                    <h3>Zarnain</h3>
+                    <p>8th Semester, SSM College</p>
+                </div>
+                <div class="team-card">
+                    <img src="{{ url_for('static', filename='images/Shahid.jpeg') }}" alt="Shahid ZahoorKoul" id="Shahid">
+                    <h3>Shahid ZahoorKoul</h3>
+                    <p>8th Semester, SSM College</p>
+                </div>
+            </div>
+        </section>
+        <div class="container1">
+            <div class="image">
+                <img src="{{ url_for('static', filename='images/yellow-removebg-preview.png') }}" alt="Emotion Stream Image" class="headphone">
+            </div>
+            <div class="text-content">
+                <h2>The idea of the website</h2>
+                <p>At Emotion Stream, our mission is to revolutionize the way you experience music by harnessing the power of advanced technologies and emotional intelligence. Our platform is designed to enhance your listening journey by providing personalized music recommendations tailored to your current mood.</p>
+                <p>By leveraging cutting-edge emotion recognition technologies, we analyze your emotional state to curate a soundtrack that perfectly complements how you’re feeling. Whether you’re seeking uplifting tunes to brighten your day or soothing melodies to help you relax, Emotion Stream is dedicated to creating a truly immersive and personalized musical experience.</p>
+                <p>Our goal is to connect you with music that resonates with your emotions, making each listening session uniquely enjoyable and meaningful.</p>
+                <hr>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+        <section class="footer-upper">
+            <div class="container2">
+                <div class="footer-links">
+                    <h4>Lorem ipsum</h4>
+                    <ul>
+                        <li>Lorem</li>
+                        <li>Lorem</li>
+                        <li>Lorem</li>
+                        <li>Lorem</li>
+                        <li>Lorem </li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Lorem ipsum</h4>
+                    <ul>
+                        <li>Lorem ipsum</li>
+                        <li>Lorem ipsum</li>
+                        <li>Lorem ipsum</li>
+                        <li>Lorem ipsum</li>
+                        <li>Lorem ipsum</li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Lorem ipsum</h4>
+                    <ul>
+                        <li>Lorem ipsum</li>
+                        <li>Lorem ipsum</li>
+                        <li>Lorem ipsum</li>
+                        <li>Lorem ipsum</li>
+                        <li>Lorem ipsum</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <section class="footer-lower">
+            <p>Copyright &copy;2024 Emotion Stream</p>
+        </section>
+    </footer>
+
+    
+        <script>
+    let mediaRecorder;
+    let audioChunks = [];
+
+    document.getElementById("recordButton").addEventListener("click", async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            document.getElementById("audioPlayback").src = audioUrl;
+            document.getElementById("audioBlobInput").value = URL.createObjectURL(audioBlob);
+            // Enable the submit button
+            document.getElementById("submitButton").disabled = false;
+        };
+
+        mediaRecorder.start();
+        document.getElementById("stopButton").disabled = false;
+        document.getElementById("recordButton").disabled = true;
+    });
+
+    document.getElementById("stopButton").addEventListener("click", () => {
+        mediaRecorder.stop();
+        document.getElementById("stopButton").disabled = true;
+        document.getElementById("recordButton").disabled = false;
+    });
+
+    document.getElementById("uploadForm").addEventListener("submit", (e) => {
+        e.preventDefault(); // Prevent default form submission
+        const formData = new FormData();
+        const audioBlob = document.getElementById("audioBlobInput").value;
+        
+        fetch(audioBlob)
+            .then(response => response.blob())
+            .then(blob => {
+                formData.append("file", blob, "recording.wav");
+                return fetch("/predict", {
+                    method: "POST",
+                    body: formData
+                });
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.body.innerHTML = data;
+            });
+    });
+
+    // Show the record section if the user is authorized
+    window.onload = function() {
+        const recordSection = document.getElementById('record');
+        const isAuthorized = recordSection.dataset.authorized === 'false';  // Convert to boolean
+
+        console.log("Is Authorized:", isAuthorized);  // For debugging
+        if (!isAuthorized) {
+            // Show a popup message
+            alert("You are now authorized!");
+
+            // Delay before revealing the record section
+            setTimeout(() => {
+                recordSection.classList.remove('hidden');
+                document.getElementById('authorization').classList.add('hidden'); // Hide authorization section
+            }, 2000); // Delay of 2000 milliseconds (2 seconds)
+        } else {
+            console.log("User is not authorized.");
+        }
+    };
+  //HIDDEN iFRAME
+    function logoutFromSpotify() {
+        // Create an invisible iframe to logout from Spotify
+        var iframe = document.createElement('iframe');
+        iframe.src = 'https://accounts.spotify.com/en/logout';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+
+        // Optionally wait a second to ensure Spotify is logged out before redirecting
+        setTimeout(function() {
+            window.location.href = '/logout';  // Your Flask logout route
+        }, 1000);
+    }
+
+</script>
+
+    
+</body>
+</html>
