@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Detection Result</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        #emotion-detected {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 50px;
+            margin-bottom: 30px;
+            background: #333;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+        #recommendation {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #fff;
+        }
+        #recommendation-btn {
+            padding: 10px 20px;
+            background-color: #1db954;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #recommendation-btn:hover {
+            background-color: #1ed760;
+        }
+        #back-home-container {
+            margin-top: 30px;
+        }
+        #back-home-btn {
+            padding: 10px 20px;
+            background-color: #ff3b30;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #back-home-btn:hover {
+            background-color: #ff6347;
+        }
+    </style>
+</head>
+<body>
+    <div id="emotion-detected">
+        Emotion: <span id="detected-emotion"></span>
+    </div>
+
+    <div id="recommendation">
+        <p>Recommended Playlist:</p>
+        <button id="recommendation-btn">Open Playlist in Spotify</button>
+    </div>
+
+    <div id="back-home-container">
+        <button id="back-home-btn">Go to Home</button>
+    </div>
+
+    <script>
+        // Get the emotion from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const emotion = urlParams.get('emotion') || 'happy';
+        
+        document.getElementById('detected-emotion').textContent = emotion.split('_')[1]; // Display the emotion
+
+        // Function to get the playlist URL based on emotion
+        function getPlaylistUrlBasedOnEmotion(emotion) {
+            const truncatedEmotion = emotion.split('_')[1]; // Get the part after the underscore
+            const emotionPlaylists = {
+                'happy': 'https://open.spotify.com/playlist/4XCCOQSZcfqMGPlnC5C1JS',
+                'sad': 'https://open.spotify.com/playlist/YOUR_SAD_PLAYLIST_ID',
+                'angry': 'https://open.spotify.com/playlist/37i9dQZF1DWXVJK4aT7pmk',
+                'relaxed': 'https://open.spotify.com/playlist/YOUR_RELAXED_PLAYLIST_ID',
+                'excited': 'https://open.spotify.com/playlist/YOUR_EXCITED_PLAYLIST_ID'
+            };
+            return emotionPlaylists[truncatedEmotion] || emotionPlaylists['happy'];
+        }
+
+        document.getElementById('recommendation-btn').onclick = () => {
+            const playlistUrl = getPlaylistUrlBasedOnEmotion(emotion);
+            window.open(playlistUrl, '_blank'); // Open the playlist in a new tab
+        };
+
+        document.getElementById('back-home-btn').onclick = () => {
+            window.location.href = '/'; // Redirect to home
+        };
+    </script>
+</body>
+</html>

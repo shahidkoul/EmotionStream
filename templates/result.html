@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Detection Result</title>
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        #emotion-detected {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 50px;
+            margin-bottom: 30px;
+            background: #333;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+        #player-container {
+            display: inline-block;
+            background: #333;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            margin-top: 20px;
+        }
+        #controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .control-button {
+            background-color: #1db954;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .control-button:hover {
+            background-color: #1ed760;
+        }
+        #now-playing {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #fff;
+        }
+        #search-container {
+            margin-top: 20px;
+        }
+        #search-input {
+            padding: 10px;
+            width: 300px;
+            border: none;
+            border-radius: 5px;
+        }
+        #search-btn {
+            padding: 10px;
+            background-color: #1db954;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+        }
+        #search-results {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .search-result {
+            background-color: #444;
+            padding: 10px;
+            margin: 5px 0;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .search-result:hover {
+            background-color: #555;
+        }
+
+        #back-home-container {
+            margin-top: 30px;
+        }
+        #back-home-btn {
+            padding: 10px 20px;
+            background-color: #ff3b30;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #back-home-btn:hover {
+            background-color: #ff6347;
+        }
+    </style>
+</head>
+<body>
+    <div id="emotion-detected">
+        Emotion: <span id="detected-emotion"></span>
+    </div>
+    
+    <div id="player-container">
+        <h1>Emotion-Based Music & Podcast Playback</h1>
+        <p id="status">Initializing...</p>
+        
+        <div id="search-container">
+            <input type="text" id="search-input" placeholder="Search for a song or podcast..." />
+            <button id="search-btn">Search</button>
+            <div id="search-results"></div>
+        </div>
+        
+        <div id="controls">
+            <button class="control-button" id="prev-btn">⏮</button>
+            <button class="control-button" id="play-btn">▶</button>
+            <button class="control-button" id="pause-btn" disabled>⏸</button>
+            <button class="control-button" id="next-btn">⏭</button>
+        </div>
+        <div id="now-playing">Not playing anything.</div>
+    </div>
+
+    <div id="back-home-container">
+        <button id="back-home-btn">Go to Home</button>
+    </div>
+    <div></div>
+     <!--LOGOUT BUTTON-->
+     <div id ="back-home-container">
+        <a href="{{ url_for('logout') }}">
+            <button>Logout</button>
+        </a>
+        
+    </div>
+
+    <script>
+        // Get the access token and emotion from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const accessToken = urlParams.get('access_token');
+        const emotion = urlParams.get('emotion') || 'happy';
+        
+        document.getElementById('detected-emotion').textContent = emotion.split('_')[1]; // Display the emotion
+
+        if (!accessToken) {
+            document.getElementById('status').textContent = 'Error: No access token found. Please authorize first.';
+            throw new Error('No access token found');
+        }
+
+        let player;
+
+        function initializePlayer() {
+            player = new Spotify.Player({
+                name: 'Web Playback SDK Player',
+                getOAuthToken: callback => {
+                    callback(accessToken);
+                }
+            });
+
+            player.on('ready', ({ device_id }) => {
+                document.getElementById('status').textContent = 'Player is ready!';
+                enableShuffle(device_id);
+            });
+
+            player.connect();
+        }
+
+        function enableShuffle(device_id) {
+            fetch(`https://api.spotify.com/v1/me/player/shuffle?state=true&device_id=${device_id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            }).then(response => {
+                if (response.ok) {
+                    console.log('Shuffle mode enabled!');
+                    const playlistUri = getPlaylistUriBasedOnEmotion(emotion);
+                    startPlayback(device_id, playlistUri);
+                } else {
+                    document.getElementById('status').textContent = 'Error enabling shuffle.';
+                    console.error('Error:', response);
+                }
+            }).catch(error => {
+                document.getElementById('status').textContent = 'Error enabling shuffle.';
+                console.error('Error during shuffle mode activation:', error);
+            });
+        }
+
+        function getPlaylistUriBasedOnEmotion(emotion) {
+            const truncatedEmotion = emotion.split('_')[1]; // Get the part after the underscore
+            const emotionPlaylists = {
+                'happy': 'spotify:playlist:4XCCOQSZcfqMGPlnC5C1JS',
+                'sad': 'spotify:playlist:YOUR_SAD_PLAYLIST_ID',
+                'angry': 'spotify:playlist:37i9dQZF1DWXVJK4aT7pmk',
+                'relaxed': 'spotify:playlist:YOUR_RELAXED_PLAYLIST_ID',
+                'excited': 'spotify:playlist:YOUR_EXCITED_PLAYLIST_ID'
+            };
+            return emotionPlaylists[truncatedEmotion] || emotionPlaylists['happy'];
+        }
+
+        function startPlayback(device_id, playlistUri) {
+            fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, {
+                method: 'PUT',
+                body: JSON.stringify({ context_uri: playlistUri }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            }).then(response => {
+                if (response.ok) {
+                    console.log('Playback started successfully!');
+                    document.getElementById('play-btn').disabled = true;
+                    document.getElementById('pause-btn').disabled = false;
+                    updateNowPlaying();
+                } else {
+                    document.getElementById('status').textContent = 'Error starting playback.';
+                    console.error('Error:', response);
+                }
+            }).catch(error => {
+                document.getElementById('status').textContent = 'Error during playback.';
+                console.error('Error during playback:', error);
+            });
+        }
+
+        document.getElementById('play-btn').addEventListener('click', () => {
+            player.resume().then(() => {
+                document.getElementById('play-btn').disabled = true;
+                document.getElementById('pause-btn').disabled = false;
+                updateNowPlaying();
+            }).catch(error => console.error('Error playing:', error));
+        });
+
+        document.getElementById('pause-btn').addEventListener('click', () => {
+            player.pause().then(() => {
+                document.getElementById('play-btn').disabled = false;
+                document.getElementById('pause-btn').disabled = true;
+            }).catch(error => console.error('Error pausing:', error));
+        });
+
+        document.getElementById('prev-btn').addEventListener('click', () => {
+            player.previousTrack().then(() => updateNowPlaying()).catch(error => console.error('Error going to previous track:', error));
+        });
+
+        document.getElementById('next-btn').addEventListener('click', () => {
+            player.nextTrack().then(() => updateNowPlaying()).catch(error => console.error('Error going to next track:', error));
+        });
+
+        document.getElementById('search-btn').addEventListener('click', () => {
+            const query = document.getElementById('search-input').value;
+            searchSongsAndPodcasts(query);
+        });
+
+        function searchSongsAndPodcasts(query) {
+            fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track,show&limit=5`, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultsContainer = document.getElementById('search-results');
+                resultsContainer.innerHTML = ''; // Clear previous results
+
+                // Handle track results
+                data.tracks.items.forEach(track => {
+                    const trackElement = document.createElement('div');
+                    trackElement.className = 'search-result';
+                    trackElement.textContent = `${track.name} by ${track.artists.map(artist => artist.name).join(', ')}`;
+                    trackElement.onclick = () => playTrack(track.uri); // Set click event to play the track
+                    resultsContainer.appendChild(trackElement);
+                });
+
+                // Handle podcast (show) results
+                data.shows.items.forEach(show => {
+                    const showElement = document.createElement('div');
+                    showElement.className = 'search-result';
+                    showElement.textContent = `Podcast: ${show.name} by ${show.publisher}`;
+                    showElement.onclick = () => playPodcastEpisode(show.id); // Set click event to play the latest episode
+                    resultsContainer.appendChild(showElement);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching search results:', error);
+            });
+        }
+
+        function playTrack(uri) {
+            fetch(`https://api.spotify.com/v1/me/player/play`, {
+                method: 'PUT',
+                body: JSON.stringify({ uris: [uri] }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            }).then(response => {
+                if (response.ok) {
+                    updateNowPlaying(); // Update the now playing info
+                } else {
+                    console.error('Error playing track:', response);
+                }
+            }).catch(error => {
+                console.error('Error playing track:', error);
+            });
+        }
+
+        function playPodcastEpisode(showId) {
+            // Get the latest episode of the show
+            fetch(`https://api.spotify.com/v1/shows/${showId}/episodes?limit=1`, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const episodeUri = data.items[0].uri;
+                fetch(`https://api.spotify.com/v1/me/player/play`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ uris: [episodeUri] }),
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        updateNowPlaying(); // Update the now playing info
+                    } else {
+                        console.error('Error playing podcast episode:', response);
+                    }
+                }).catch(error => {
+                    console.error('Error playing podcast episode:', error);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching podcast episode:', error);
+            });
+        }
+
+        function updateNowPlaying() {
+            player.getCurrentState().then(state => {
+                if (!state || !state.track_window.current_track) {
+                    document.getElementById('now-playing').textContent = 'Not playing anything.';
+                    return;
+                }
+
+                const track = state.track_window.current_track;
+                const trackName = track.name;
+                const artistNames = track.artists.map(artist => artist.name).join(', ');
+                document.getElementById('now-playing').textContent = `Now Playing: ${trackName} by ${artistNames}`;
+                
+                // Update every 5 seconds
+                setTimeout(() => updateNowPlaying(), 5000);
+            });
+        }
+        document.getElementById('back-home-btn').addEventListener('click', () => {
+            window.location.href = '/'});
+        window.onload = initializePlayer; // Initialize the player when the page loads
+    </script>
+</body>
+</html>
