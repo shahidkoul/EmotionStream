@@ -21,7 +21,7 @@ with open('labels.pkl', 'rb') as f:
     lb = pickle.load(f)
 
 # Define the folder to save uploaded audio files
-UPLOAD_FOLDER = r'E://data//tested audios'
+UPLOAD_FOLDER = r'https://github.com/shahidkoul/emotionstream/tree/main/data'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Ensure the upload folder exists
@@ -53,7 +53,7 @@ def index():
 # Spotify API Credentials
 CLIENT_ID = '428bbcecfbdd4e22a0e1eec5adeed462'
 CLIENT_SECRET = 'afd41f0466b74180a73cdc62d6313d24'
-REDIRECT_URI = 'http://127.0.0.1:5000/callback'
+REDIRECT_URI = 'https://shahidkoul.github.io/emotionstream/callback'
 # Authorize the user, handle token expiration and refresh
 def refresh_token(refresh_token):
     token_url = 'https://accounts.spotify.com/api/token'
